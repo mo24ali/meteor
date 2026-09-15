@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Environment / secrets
+.env
+
+# Generated medallion data (raw snapshots / artifacts)
+data/bronze/
+data/silver/
+data/gold/
+
+# OS
+.DS_Store
