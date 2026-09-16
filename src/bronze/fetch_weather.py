@@ -27,6 +27,10 @@ DAILY_FIELDS = [
 logger = get_logger(__name__)
 
 
+def datetime_now() -> datetime:
+    return datetime.now()
+
+
 def validate_payload(payload: dict) -> None:
     daily = payload.get("daily")
     if not isinstance(daily, dict) or "time" not in daily:
