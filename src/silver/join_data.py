@@ -63,3 +63,28 @@ def enrich_weather_with_cities(
         out_path,
     )
     return merged
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Silver layer: join cleaned weather with city metadata."
+    )
+    parser.add_argument(
+        "--weather-csv", default="data/silver/weather.csv", help="Cleaned weather CSV"
+    )
+    parser.add_argument(
+        "--cities-csv", default="data/raw_cities/cities.csv", help="Cities metadata CSV"
+    )
+    parser.add_argument(
+        "--output-csv", default="data/silver/weather_enriched.csv", help="Enriched output CSV"
+    )
+    return parser.parse_args(argv)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    enrich_weather_with_cities(
+        weather_csv=args.weather_csv,
+        cities_csv=args.cities_csv,
+        output_csv=args.output_csv,
+    )
