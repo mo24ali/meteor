@@ -73,3 +73,12 @@ def clean_bronze_snapshots(bronze_dir: str) -> pd.DataFrame:
     log_quality_report(combined)
 
     return combined
+
+
+def write_silver_weather(bronze_dir: str, output_csv: str) -> int:
+    silver = clean_bronze_snapshots(bronze_dir)
+    out_path = Path(output_csv)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    silver.to_csv(out_path, index=False)
+    logger.info("Silver weather written to %s", out_path)
+    return len(silver)
