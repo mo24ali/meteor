@@ -19,3 +19,8 @@ def _good_df():
             "weather_code": [0, 61],
         }
     )
+
+
+def test_run_quality_checks_clean_data_has_no_issues():
+    report = run_quality_checks(_good_df())
+    assert report.empty
