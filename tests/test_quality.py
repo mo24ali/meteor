@@ -24,3 +24,14 @@ def _good_df():
 def test_run_quality_checks_clean_data_has_no_issues():
     report = run_quality_checks(_good_df())
     assert report.empty
+
+
+def test_run_quality_checks_detects_nulls_and_dupes():
+    df = _good_df()
+    df.loc[0, "temp_max_celsius"] = None
+    df = pd.concat([df, df.iloc[:1]], ignore_index=True)
+
+    report = run_quality_checks(df)
+    checks = report["check"].tolist()
+    assert "no_null" in checks
+    assert "city_date_unique" in checks
