@@ -33,3 +33,10 @@ def _write_snapshot(tmp_path, run_id, results, day="2026-09-15"):
     path = day_dir / f"raw_weather_snapshot_{run_id}.json"
     path.write_text(json.dumps(snapshot), encoding="utf-8")
     return path
+
+
+def test_flatten_city_daily_builds_one_row_per_day():
+    df = flatten_city_daily(_result(n_days=7))
+    assert df.shape == (7, 12)
+    assert df["date"].nunique() == 7
+    assert df["temp_max_celsius"].tolist() == [28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0]
