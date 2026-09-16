@@ -25,3 +25,22 @@ def test_load_city_metadata_raises_on_missing_columns(tmp_path):
     cities_path.write_text("city\nCasablanca\n", encoding="utf-8")
     with pytest.raises(ValueError, match="missing required columns"):
         load_city_metadata(str(cities_path))
+
+
+def test_enrich_weather_with_cities(tmp_path):
+    weather_path = tmp_path / "weather.csv"
+    cities_path = tmp_path / "cities.csv"
+    weather_path.write_text(WEATHER_CSV, encoding="utf-8")
+    cities_path.write_text(META_CSV, encoding="utf-8")
+    output_path = tmp_path / "out" / "weather_enriched.csv"
+
+    df = enrich_weather_with_cities(
+        weather_csv=str(weather_path),
+        cities_csv=str(cities_path),
+        output_csv=str(output_path),
+    )
+
+    assert "country" in df.columns and "admin_name" in df.columns
+    assert df["country"].isna().sum() == 0
+    assert df.loc[0, "admin_name"] == "Casablanca-Settat"
+    assert output_path.is_file()
