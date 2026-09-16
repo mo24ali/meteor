@@ -40,3 +40,11 @@ def test_flatten_city_daily_builds_one_row_per_day():
     assert df.shape == (7, 12)
     assert df["date"].nunique() == 7
     assert df["temp_max_celsius"].tolist() == [28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0]
+
+
+def test_flatten_city_daily_includes_all_mapped_columns():
+    df = flatten_city_daily(_result(n_days=7))
+    for col in ["precipitation_mm", "precipitation_prob_pct", "wind_speed_max_kmh",
+                 "wind_gusts_max_kmh", "weather_code"]:
+        assert col in df.columns
+    assert (df["wind_gusts_max_kmh"] == 31.0).all()
