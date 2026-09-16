@@ -35,3 +35,14 @@ def test_run_quality_checks_detects_nulls_and_dupes():
     checks = report["check"].tolist()
     assert "no_null" in checks
     assert "city_date_unique" in checks
+
+
+def test_run_quality_checks_detects_inverted_minmax_and_invalid_code():
+    df = _good_df()
+    df.loc[0, ["temp_min_celsius", "temp_max_celsius"]] = [30.0, 20.0]
+    df.loc[1, "weather_code"] = 999
+
+    report = run_quality_checks(df)
+    checks = report.set_index("check")["issues"].to_dict()
+    assert checks["temp_min_le_max"] == 1
+    assert checks["wmo_code_valid"] == 1
