@@ -48,3 +48,8 @@ def test_flatten_city_daily_includes_all_mapped_columns():
                  "wind_gusts_max_kmh", "weather_code"]:
         assert col in df.columns
     assert (df["wind_gusts_max_kmh"] == 31.0).all()
+
+
+def test_flatten_city_daily_parses_dates():
+    df = flatten_city_daily(_result(n_days=7))
+    assert pd.api.types.is_datetime64_any_dtype(df["date"])
