@@ -58,3 +58,18 @@ def test_flatten_city_daily_parses_dates():
 def test_clean_bronze_snapshots_empty_dir_returns_empty(tmp_path):
     df = clean_bronze_snapshots(str(tmp_path / "bronze"))
     assert df.empty
+
+
+def test_clean_bronze_snapshots_dedup_keeps_latest(tmp_path):
+    early = _result()
+    late = _result()
+    late["ingested_at"] = "2026-09-15T18:00:00.000000"
+    late["raw_api_response"]["daily"]["temperature_2m_max"] = [40.0] * 7
+
+    _write_snapshot(tmp_path, "run1", [early])
+    _write_snapshot(tmp_path, "run2", [late])
+
+    df = clean_bronze_snapshots(str(tmp_path / "bronze"))
+    assert len(df) == 7
+    assert (df["temp_max_celsius"] == 40.0).all()
+    assert (df["snapshot_run_id"] == "run2").all()
