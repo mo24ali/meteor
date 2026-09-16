@@ -44,6 +44,10 @@ def flatten_city_daily(result: dict) -> pd.DataFrame:
 
 def clean_bronze_snapshots(bronze_dir: str) -> pd.DataFrame:
     files = sorted(Path(bronze_dir).rglob("raw_weather_snapshot_*.json"))
+    if not files:
+        logger.warning("No bronze snapshots found under %s", bronze_dir)
+        return pd.DataFrame(columns=SILVER_COLUMNS)
+
     all_rows = []
 
     for f in files:
