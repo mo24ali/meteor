@@ -51,3 +51,14 @@ def test_run_quality_checks_detects_inverted_minmax_and_invalid_code():
 def test_run_quality_checks_missing_column_reported():
     report = run_quality_checks(pd.DataFrame({"city_name": ["x"]}))
     assert "required_columns" in report["check"].tolist()
+
+
+def test_log_quality_report_returns_false_on_issues(caplog):
+    df = _good_df()
+    df.loc[0, "temp_max_celsius"] = None
+
+    with caplog.at_level("WARNING"):
+        ok = log_quality_report(df)
+
+    assert ok is False
+    assert "Quality check 'no_null'" in caplog.text
