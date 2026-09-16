@@ -99,6 +99,7 @@ def test_run_bronze_ingestion_writes_snapshot(tmp_path, monkeypatch):
         "src.bronze.fetch_weather.fetch_weather_for_city",
         lambda lat, lng, **kwargs: {"daily": {"time": ["2026-09-15"]}},
     )
+    monkeypatch.setattr("src.bronze.fetch_weather.datetime_now", _AdvancingNow(FIXED_NOW))
 
     output_dir = tmp_path / "bronze"
     failed = run_bronze_ingestion(cities_csv=str(cities_csv), output_dir=str(output_dir))
@@ -121,6 +122,7 @@ def test_run_bronze_ingestion_resume_skips_existing(tmp_path, monkeypatch):
         "src.bronze.fetch_weather.fetch_weather_for_city",
         lambda lat, lng, **kwargs: {"daily": {"time": ["2026-09-15"]}},
     )
+    monkeypatch.setattr("src.bronze.fetch_weather.datetime_now", _AdvancingNow(FIXED_NOW))
 
     output_dir = tmp_path / "bronze"
     run_bronze_ingestion(cities_csv=str(cities_csv), output_dir=str(output_dir))
