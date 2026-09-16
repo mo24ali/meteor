@@ -41,3 +41,29 @@ def flatten_city_daily(result: dict) -> pd.DataFrame:
         rows.append(row)
 
     return pd.DataFrame(rows)
+
+def clean_bronze_snapshots(bronze_dir: str) -> pd.DataFrame:
+    files = sorted(Path(bronze_dir).rglob("raw_weather_snapshot_*.json"))
+    all_rows = []
+
+    for f in files:
+        with open(f, encoding="utf-8") as fh:
+            snapshot = json.load(fh)
+        for result in snapshot.get("results", []):
+            df = flatten_city_daily(result)
+            df["snapshot_run_id"] = snapshot["run_id"]
+            all_rows.append(df)
+
+    combined = pd.concat(all_rows, ignore_index=True)
+
+    combined = (
+        combined
+        .sort_values(["date", "ingested_at"])
+        .drop_duplicates(subset=["city_name", "date"], keep="last")
+        .sort_values(["date", "city_name"])
+        .reset_index(drop=True)
+    )
+
+    logger.info("Silver weather rows after cleaning: %d", len(combined))
+
+    return combined
