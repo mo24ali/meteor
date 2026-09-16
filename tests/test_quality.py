@@ -46,3 +46,8 @@ def test_run_quality_checks_detects_inverted_minmax_and_invalid_code():
     checks = report.set_index("check")["issues"].to_dict()
     assert checks["temp_min_le_max"] == 1
     assert checks["wmo_code_valid"] == 1
+
+
+def test_run_quality_checks_missing_column_reported():
+    report = run_quality_checks(pd.DataFrame({"city_name": ["x"]}))
+    assert "required_columns" in report["check"].tolist()
