@@ -18,3 +18,10 @@ def test_load_city_metadata_keeps_meta_columns(tmp_path):
     df = load_city_metadata(str(cities_path))
     assert df.columns.tolist() == ["city", "country", "admin_name"]
     assert len(df) == 2
+
+
+def test_load_city_metadata_raises_on_missing_columns(tmp_path):
+    cities_path = tmp_path / "cities.csv"
+    cities_path.write_text("city\nCasablanca\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="missing required columns"):
+        load_city_metadata(str(cities_path))
