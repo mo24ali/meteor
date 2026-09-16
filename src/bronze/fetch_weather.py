@@ -103,7 +103,7 @@ def run_bronze_ingestion(
     cities_df = load_moroccan_cities(cities_csv)
     logger.info("Loaded %d cities for weather ingestion", len(cities_df))
 
-    now = datetime.now()
+    now = datetime_now()
     date_str = now.strftime("%Y-%m-%d")
     day_dir = os.path.join(output_dir, date_str)
 
@@ -131,7 +131,7 @@ def run_bronze_ingestion(
                     "city": city_name,
                     "latitude": lat,
                     "longitude": lng,
-                    "ingested_at": datetime.now().isoformat(),
+                    "ingested_at": datetime_now().isoformat(),
                     "raw_api_response": raw_data,
                 }
             )
