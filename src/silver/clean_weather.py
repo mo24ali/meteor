@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 from pathlib import Path
+from src.silver.quality import log_quality_report
 from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
@@ -69,5 +70,6 @@ def clean_bronze_snapshots(bronze_dir: str) -> pd.DataFrame:
     )
 
     logger.info("Silver weather rows after cleaning: %d", len(combined))
+    log_quality_report(combined)
 
     return combined
