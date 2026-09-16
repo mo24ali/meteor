@@ -21,3 +21,23 @@ COLUMN_MAP = {
     "wind_speed_10m_max": "wind_speed_max_kmh",
     "wind_gusts_10m_max": "wind_gusts_max_kmh",
 }
+
+
+def flatten_city_daily(result: dict) -> pd.DataFrame:
+    raw = result["raw_api_response"]["daily"]
+
+    rows = []
+    for i, day in enumerate(raw["time"]):
+        row = {
+            "city_name": result["city"],
+            "latitude": result["latitude"],
+            "longitude": result["longitude"],
+            "date": pd.to_datetime(day),
+            "weather_code": raw["weather_code"][i],
+            "ingested_at": result["ingested_at"],
+        }
+        for raw_col, silver_col in COLUMN_MAP.items():
+            row[silver_col] = raw[raw_col][i]
+        rows.append(row)
+
+    return pd.DataFrame(rows)
