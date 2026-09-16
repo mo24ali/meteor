@@ -53,3 +53,8 @@ def test_flatten_city_daily_includes_all_mapped_columns():
 def test_flatten_city_daily_parses_dates():
     df = flatten_city_daily(_result(n_days=7))
     assert pd.api.types.is_datetime64_any_dtype(df["date"])
+
+
+def test_clean_bronze_snapshots_empty_dir_returns_empty(tmp_path):
+    df = clean_bronze_snapshots(str(tmp_path / "bronze"))
+    assert df.empty
