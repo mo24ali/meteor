@@ -44,3 +44,27 @@ def test_enrich_weather_with_cities(tmp_path):
     assert df["country"].isna().sum() == 0
     assert df.loc[0, "admin_name"] == "Casablanca-Settat"
     assert output_path.is_file()
+
+
+def test_enrich_weather_with_cities_marks_unmatched(tmp_path, caplog):
+    weather_path = tmp_path / "weather.csv"
+    cities_path = tmp_path / "cities.csv"
+    weather_path.write_text(
+        "city_name,date,temp_max_celsius\nCasablanca,2026-09-15,28.0\n",
+        encoding="utf-8",
+    )
+    cities_path.write_text(
+        "city,lat,lng,country,admin_name\nRabat,34.0209,-6.8416,Morocco,Rabat-Salé-Kénitra\n",
+        encoding="utf-8",
+    )
+    output_path = tmp_path / "out" / "weather_enriched.csv"
+
+    with caplog.at_level("WARNING"):
+        df = enrich_weather_with_cities(
+            weather_csv=str(weather_path),
+            cities_csv=str(cities_path),
+            output_csv=str(output_path),
+        )
+
+    assert df["country"].isna().sum() == 1
+    assert "No city metadata found" in caplog.text
