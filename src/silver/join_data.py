@@ -29,3 +29,37 @@ def load_city_metadata(csv_path: str) -> pd.DataFrame:
         .drop_duplicates(subset=["city"], keep="first")
         .reset_index(drop=True)
     )
+
+
+def enrich_weather_with_cities(
+    weather_csv: str,
+    cities_csv: str,
+    output_csv: str,
+) -> pd.DataFrame:
+    weather = pd.read_csv(weather_csv)
+    weather["date"] = pd.to_datetime(weather["date"])
+
+    cities = load_city_metadata(cities_csv)
+    merged = weather.merge(cities, left_on="city_name", right_on="city", how="left")
+
+    unmatched = merged.loc[merged["country"].isna(), "city_name"].drop_duplicates().tolist()
+    if unmatched:
+        logger.warning(
+            "No city metadata found for %d city(ies): %s",
+            len(unmatched),
+            ", ".join(unmatched),
+        )
+
+    merged = merged.drop(columns=["city"]).reindex(columns=SILVER_ORDER)
+
+    out_path = Path(output_csv)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(out_path, index=False)
+
+    logger.info(
+        "Enriched silver weather: %d rows (%.0f%%) with matched city metadata -> %s",
+        len(merged),
+        100 * (1 - merged["country"].isna().mean()),
+        out_path,
+    )
+    return merged
