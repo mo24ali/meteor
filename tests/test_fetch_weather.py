@@ -10,6 +10,17 @@ from src.bronze.fetch_weather import (
     validate_payload,
 )
 
+FIXED_NOW = datetime(2026, 9, 15, 12, 0, 0)
+
+
+class _AdvancingNow:
+    def __init__(self, start):
+        self._t = start
+
+    def __call__(self):
+        self._t = self._t.replace(second=self._t.second + 1)
+        return self._t
+
 
 class FakeResponse:
     def __init__(self, payload, status_code=200):
