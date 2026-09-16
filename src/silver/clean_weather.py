@@ -1,3 +1,4 @@
+import argparse
 import json
 import pandas as pd
 from pathlib import Path
@@ -82,3 +83,17 @@ def write_silver_weather(bronze_dir: str, output_csv: str) -> int:
     silver.to_csv(out_path, index=False)
     logger.info("Silver weather written to %s", out_path)
     return len(silver)
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Silver layer: clean bronze weather snapshots into a tidy dataset."
+    )
+    parser.add_argument("--bronze-dir", default="data/bronze", help="Root directory of bronze snapshots")
+    parser.add_argument("--output-csv", default="data/silver/weather.csv", help="Output cleaned CSV path")
+    return parser.parse_args(argv)
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    write_silver_weather(bronze_dir=args.bronze_dir, output_csv=args.output_csv)
