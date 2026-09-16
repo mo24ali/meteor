@@ -84,3 +84,13 @@ def run_quality_checks(df: pd.DataFrame) -> pd.DataFrame:
         issues.append(_issue("city_date_unique", int(dupes.sum()), "duplicate city_name+date rows"))
 
     return pd.DataFrame(issues, columns=["check", "issues", "detail"])
+
+def log_quality_report(df: pd.DataFrame) -> bool:
+    report = run_quality_checks(df)
+    logger.info("Quality checks: %d/%d passed", len(report[report["issues"] == 0]), len(report))
+    if report.empty:
+        logger.info("All quality checks passed for %d rows", len(df))
+        return True
+    for _, row in report.iterrows():
+        logger.warning("Quality check '%s': %d issue(s) -> %s", row["check"], row["issues"], row["detail"])
+    return len(report) == 0
