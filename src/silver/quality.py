@@ -85,6 +85,7 @@ def run_quality_checks(df: pd.DataFrame) -> pd.DataFrame:
 
     return pd.DataFrame(issues, columns=["check", "issues", "detail"])
 
+
 def log_quality_report(df: pd.DataFrame) -> bool:
     report = run_quality_checks(df)
     logger.info("Quality checks: %d/%d passed", len(report[report["issues"] == 0]), len(report))
