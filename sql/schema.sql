@@ -5,45 +5,47 @@ CREATE SCHEMA IF NOT EXISTS gold;
 
 ----------------------------------------------------
 -- SILVER LAYER: Cleaned & Standardized Weather Data
+-- (daily forecast, one row per city per day)
 ----------------------------------------------------
 CREATE TABLE IF NOT EXISTS silver.weather (
-    id SERIAL PRIMARY KEY,
-    city_id INT NOT NULL,
     city_name VARCHAR(100) NOT NULL,
-    country VARCHAR(10),
     latitude NUMERIC(8, 5),
     longitude NUMERIC(8, 5),
-    temperature_celsius NUMERIC(5, 2),
-    feels_like_celsius NUMERIC(5, 2),
-    humidity INT,
-    pressure_hpa INT,
-    wind_speed_m_s NUMERIC(5, 2),
-    weather_condition VARCHAR(100),
-    recorded_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    extracted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT idx_city_timestamp UNIQUE (city_id, recorded_at)
+    country VARCHAR(20),
+    admin_name VARCHAR(100),
+    date DATE NOT NULL,
+    temp_max_celsius NUMERIC(5, 2),
+    temp_min_celsius NUMERIC(5, 2),
+    precipitation_mm NUMERIC(6, 2),
+    precipitation_prob_pct INT,
+    wind_speed_max_kmh NUMERIC(6, 2),
+    wind_gusts_max_kmh NUMERIC(6, 2),
+    weather_code INT,
+    ingested_at TIMESTAMP WITH TIME ZONE,
+    snapshot_run_id VARCHAR(20),
+    CONSTRAINT idx_silver_city_date UNIQUE (city_name, date)
 );
 
 ----------------------------------------------------
 -- GOLD LAYER: Aggregated Risk Scores & Analytics
 ----------------------------------------------------
 CREATE TABLE IF NOT EXISTS gold.daily_weather_summary (
-    id SERIAL PRIMARY KEY,
     city_name VARCHAR(100) NOT NULL,
+    latitude NUMERIC(8, 5),
+    longitude NUMERIC(8, 5),
+    country VARCHAR(20),
+    admin_name VARCHAR(100),
     date DATE NOT NULL,
-    avg_temp_celsius NUMERIC(5, 2),
-    max_temp_celsius NUMERIC(5, 2),
-    min_temp_celsius NUMERIC(5, 2),
-    max_wind_speed NUMERIC(5, 2),
-    avg_humidity NUMERIC(5, 2),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT idx_city_date UNIQUE (city_name, date)
-);
-
-CREATE TABLE IF NOT EXISTS gold.weather_risk_scores (
-    id SERIAL PRIMARY KEY,
-    city_name VARCHAR(100) NOT NULL,
-    risk_score NUMERIC(4, 2) NOT NULL, -- e.g. 0.00 to 10.00
-    risk_level VARCHAR(20) NOT NULL,   -- 'LOW', 'MODERATE', 'HIGH', 'EXTREME'
-    calculated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    temp_max_celsius NUMERIC(5, 2),
+    temp_min_celsius NUMERIC(5, 2),
+    precipitation_mm NUMERIC(6, 2),
+    temp_category VARCHAR(20),
+    precip_category VARCHAR(20),
+    wind_category VARCHAR(20),
+    season VARCHAR(20),
+    is_weekend BOOLEAN,
+    risk_score NUMERIC(5, 2) NOT NULL,
+    risk_level VARCHAR(10) NOT NULL,
+    calculated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT idx_gold_city_date UNIQUE (city_name, date)
 );
