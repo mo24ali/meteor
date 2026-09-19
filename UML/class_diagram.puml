@@ -1,0 +1,188 @@
+@startuml
+!pragma layout smetana
+' ============================================================
+' Meteor — Class diagram (medallion architecture)
+' bronze → silver → gold → PostgreSQL, orchestrated by Airflow,
+' visualized by a Streamlit dashboard.
+' ============================================================
+
+skinparam classAttributeIconSize 10
+skinparam stereotypeCBackgroundColor #EEEEEE
+skinparam class {
+  BackgroundColor White
+  BorderColor #333333
+}
+skinparam package {
+  BackgroundColor #FBFBFB
+  BorderColor #AAAAAA
+}
+
+title Meteor — Medallion Weather Pipeline (Class Diagram)
+
+' ------------------------------------------------------------
+' Shared configuration & infrastructure
+' ------------------------------------------------------------
+package "src" {
+
+  package "utils" {
+    class Settings <<module>> {
+      ..
+      + POSTGRES_USER / PASSWORD / DB / HOST / PORT
+      + WEATHER_API_KEY / WEATHER_BASE_URL
+      + DATA_DIR / BRONZE_DIR / SILVER_DIR / GOLD_DIR
+      + RAW_CITIES_PATH
+      ..
+      + DATABASE_URL : str
+    }
+
+    class db_connection <<module>> {
+      ..
+      + engine : Engine
+      + SessionLocal : sessionmaker
+      ..
+      + get_engine()
+      + get_db(): Session
+    }
+
+    class logger <<module>> {
+      + get_logger(name="meteor"): Logger
+    }
+  }
+
+  ' ------------------------------------------------------------
+  ' Bronze layer : raw API extraction
+  ' ------------------------------------------------------------
+  package "bronze" {
+    class fetch_cities <<module>> {
+      + load_moroccan_cities(csv): DataFrame
+    }
+
+    class fetch_weather <<module>> {
+      + fetch_weather_for_city(lat, lng): dict
+      + validate_payload(payload): None
+      + snapshot_path(output_dir, date_str, run_ts): str
+      + already_ingested_cities(day_dir): Set[str]
+      + run_bronze_ingestion(cities_csv, output_dir, resume): int
+    }
+  }
+
+  ' ------------------------------------------------------------
+  ' Silver layer : cleaning & enrichment
+  ' ------------------------------------------------------------
+  package "silver" {
+    class clean_weather <<module>> {
+      + flatten_city_daily(result): DataFrame
+      + clean_bronze_snapshots(bronze_dir): DataFrame
+      + write_silver_weather(bronze_dir, output_csv): int
+    }
+
+    class quality <<module>> {
+      + log_quality_report(df)
+    }
+
+    class join_data <<module>> {
+      + load_city_metadata(csv): DataFrame
+      + enrich_weather_with_cities(weather_csv, cities_csv, output_csv): DataFrame
+    }
+  }
+
+  ' ------------------------------------------------------------
+  ' Gold layer : feature engineering & storage
+  ' ------------------------------------------------------------
+  package "gold" {
+    class risk_score <<module>> {
+      .. constants ..
+      RISK_WEIGHTS / RISK_LEVELS / WMO_SEVERITY
+      ..
+      + temp_score(temp_max): float
+      + precip_score(precip_mm): float
+      + wind_score(speed_kmh): float
+      + wmo_severity(code): float
+      + compute_risk_score(row): (score, level)
+      + add_categories(df): DataFrame
+      + build_gold_dataset(silver_df): DataFrame
+    }
+
+    class db_loader <<module>> {
+      + ensure_schema(engine): None
+      + upsert_gold_summary(df, engine): int
+      + load_gold(csv_path, engine, skip_schema): int
+    }
+  }
+}
+
+' ------------------------------------------------------------
+' Orchestration (Airflow DAG)
+' ------------------------------------------------------------
+package "orchestration" {
+  class weather_medallion_pipeline <<DAG>> {
+    schedule_interval : "@daily"
+    retries : 2
+    retry_exponential_backoff : true
+    ..
+    + check_cities_file
+    + bronze_extract_weather
+    + silver_clean_weather
+    + silver_enrich_cities
+    + gold_risk_features
+    + gold_load_postgres
+  }
+}
+
+' ------------------------------------------------------------
+' Streamlit dashboard
+' ------------------------------------------------------------
+package "streamlit_app" {
+  class queries <<module>> {
+    + load_gold(): DataFrame
+    + load_silver(): DataFrame
+    + risk_color(level): str
+    + latest_per_city(df): DataFrame
+  }
+
+  class app <<module>> {
+    + Sidebar: Cities / Date / Season / Risk filters
+    + KPIs: cities, temp max, precip max, risky periods, top risk
+    + Tab: map (st.map)
+    + Tab: trends (st.line_chart)
+    + Tab: risk analysis (st.bar_chart)
+    + Tab: data (st.dataframe + CSV)
+  }
+}
+
+' ------------------------------------------------------------
+' External systems
+' ------------------------------------------------------------
+class "Open-Meteo REST API" as API <<external>>
+class "PostgreSQL\n(meteor_db)" as DB <<external>>
+
+' ------------------------------------------------------------
+' Dependencies
+' ------------------------------------------------------------
+Settings ..> db_connection : DATABASE_URL
+db_connection ..> DB : SQLAlchemy
+fetch_weather ..> fetch_cities : city catalog
+fetch_weather ..> API : HTTPS GET forecast
+fetch_weather ..> logger
+
+clean_weather ..> fetch_weather : reads bronze snapshots
+clean_weather ..> quality : quality report
+join_data ..> clean_weather : consumes weather.csv
+join_data ..> fetch_cities : city metadata
+
+risk_score ..> join_data : consumes weather_enriched.csv
+db_loader ..> risk_score : build_gold_dataset
+db_loader ..> db_connection : engine
+db_loader ..> DB : upsert gold.daily_weather_summary
+
+weather_medallion_pipeline ..> fetch_weather : orchestrates
+weather_medallion_pipeline ..> clean_weather
+weather_medallion_pipeline ..> join_data
+weather_medallion_pipeline ..> risk_score
+weather_medallion_pipeline ..> db_loader
+
+queries ..> db_connection : engine
+queries ..> DB : SELECT gold / silver
+app ..> queries : cached data
+
+@enduml
