@@ -50,14 +50,24 @@ if filtered.empty:
     st.info("No data matches the selected filters.")
     st.stop()
 
-kpi_cols = st.columns(4)
-kpi_cols[0].metric("Records", f"{len(filtered):,}")
-kpi_cols[1].metric("Cities", f"{filtered['city_name'].nunique():,}")
-kpi_cols[2].metric("Avg risk score", f"{filtered['risk_score'].mean():.1f}" if not filtered.empty else "—")
-kpi_cols[3].metric(
-    "High + Extreme days",
-    f"{((filtered['risk_level'].isin(['HIGH', 'EXTREME'])).sum()):,}" if not filtered.empty else "—",
+top_risk = filtered.loc[filtered["risk_score"].idxmax()]
+risky_periods = filtered["risk_level"].isin(["HIGH", "EXTREME"]).sum()
+
+kpi_cols = st.columns(5)
+kpi_cols[0].metric("Cities", f"{filtered['city_name'].nunique():,}")
+kpi_cols[1].metric("Max temperature", f"{filtered['temp_max_celsius'].max():.1f} °C")
+kpi_cols[2].metric("Max precipitation", f"{filtered['precipitation_mm'].max():.1f} mm")
+kpi_cols[3].metric("Risky periods", f"{risky_periods:,}")
+kpi_cols[4].metric("Highest risk", f"{top_risk['city_name']} · {top_risk['risk_score']:.1f}")
+
+vigilance = (
+    f"La vigilance la plus forte concerne **{top_risk['city_name']}** le "
+    f"**{top_risk['date'].date()}** avec un score de risque de "
+    f"**{top_risk['risk_score']:.1f}** ({top_risk['risk_level']})."
 )
+if risky_periods == 0:
+    vigilance += " Aucune journée à risque élevé ou extrême (HIGH/EXTREME) dans la sélection actuelle."
+st.info(f"⚠️ **Où et quand être particulièrement vigilant ?** {vigilance}")
 
 tab_map, tab_trend, tab_risk, tab_data = st.tabs(
     ["🗺️ Map", "📈 Trends", "🎯 Risk analysis", "📋 Data"]
