@@ -27,6 +27,8 @@ with st.sidebar:
         min_value=min_date,
         max_value=max_date,
     )
+    seasons = sorted(df["season"].dropna().unique().tolist())
+    selected_seasons = st.multiselect("Périodes (saison)", seasons, default=seasons)
     selected_levels = st.multiselect("Risk levels", risk_levels, default=risk_levels)
     st.caption(f"Data window: {min_date} → {max_date} · {len(cities)} cities")
 
@@ -38,10 +40,15 @@ else:
 mask = df["city_name"].isin(selected_cities)
 mask &= df["date"].dt.date >= pd.Timestamp(start_date).date()
 mask &= df["date"].dt.date <= pd.Timestamp(end_date).date()
+mask &= df["season"].isin(selected_seasons)
 mask &= df["risk_level"].isin(selected_levels)
 filtered = df[mask].copy()
 
 latest = latest_per_city(filtered)
+
+if filtered.empty:
+    st.info("No data matches the selected filters.")
+    st.stop()
 
 kpi_cols = st.columns(4)
 kpi_cols[0].metric("Records", f"{len(filtered):,}")
@@ -51,10 +58,6 @@ kpi_cols[3].metric(
     "High + Extreme days",
     f"{((filtered['risk_level'].isin(['HIGH', 'EXTREME'])).sum()):,}" if not filtered.empty else "—",
 )
-
-if filtered.empty:
-    st.info("No data matches the selected filters.")
-    st.stop()
 
 tab_map, tab_trend, tab_risk, tab_data = st.tabs(
     ["🗺️ Map", "📈 Trends", "🎯 Risk analysis", "📋 Data"]
